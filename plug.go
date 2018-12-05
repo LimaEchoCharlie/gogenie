@@ -1,7 +1,6 @@
 package gogenie
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -50,18 +49,15 @@ func initPlugs() (err error) {
 }
 
 type plug struct {
-	id      PlugID
-	setChan chan bool
-	getChan chan bool
-	timer   *time.Timer
+	id    PlugID
+	timer *time.Timer
+	state bool
 }
 
 // newPlug creates a new variable to control the plug with the supplied id
-func NewPlug(ctx context.Context, id PlugID) *plug {
+func NewPlug(id PlugID) *plug {
 	p := &plug{
-		setChan: make(chan bool),
-		getChan: make(chan bool),
-		id:      id,
+		id: id,
 	}
 
 	// initialise the plugs
@@ -70,36 +66,13 @@ func NewPlug(ctx context.Context, id PlugID) *plug {
 	}
 
 	// start with plug off
-	p.setPins(false)
-	currentState := false
-
-	// start routine to control and manage plug
-	go func() {
-		for {
-			select {
-
-			case newState := <-p.setChan:
-				log.Printf("set %v %v\n", p.id, newState)
-				p.setPins(newState)
-				currentState = newState
-			case p.getChan <- currentState:
-			case <-ctx.Done():
-				close(p.getChan)
-				close(p.setChan)
-				if p.timer != nil {
-					p.timer.Stop()
-				}
-				return
-			}
-		}
-	}()
+	p.Set(false)
 
 	return p
 }
 
-// setPins turns plug on or off by setting the pins directly.
-// This function isn't intended to called from outside this file.
-func (p *plug) setPins(on bool) error {
+// set sets the plug
+func (p *plug) Set(on bool) error {
 	// lock pins
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -146,15 +119,14 @@ func (p *plug) setPins(on bool) error {
 	// disable the modulator
 	enable.off()
 
-	return lastPinError()
-}
-
-// set sets the plug
-func (p *plug) Set(on bool) {
-	p.setChan <- on
+	err := lastPinError()
+	if err == nil {
+		p.state = on
+	}
+	return err
 }
 
 // state returns the current status of the plug
 func (p *plug) State() bool {
-	return <-p.getChan
+	return p.state
 }
