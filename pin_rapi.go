@@ -1,4 +1,4 @@
-// +build rapi
+// +build !dev
 
 package gogenie
 
