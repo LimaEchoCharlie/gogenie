@@ -4,9 +4,9 @@ package gogenie
 
 import "fmt"
 
-const _PlugID_name = "PlugAllPlugOnePlugTwo"
+const _PlugID_name = "allonetwo"
 
-var _PlugID_index = [...]uint8{0, 7, 14, 21}
+var _PlugID_index = [...]uint8{0, 3, 6, 9}
 
 func (i PlugID) String() string {
 	if i < 0 || i >= PlugID(len(_PlugID_index)-1) {

@@ -5,19 +5,25 @@ controller board. Gogenie uses [periph.io](https://periph.io/) for GPIO control 
 
 ## Example
 ~~~go
-import "github.com/limaechocharlie/gogenie"
+import (
+	"github.com/limaechocharlie/gogenie"
+	"time"
+)
 
 // choose which plug to control
-p := gogenie.NewPlug(gogenie.PlugOne)
+p := gogenie.PlugOne
 
 // switch the plug on
-p.Set(true)
+p.On()
 
-// get the state
-fmt.Printf(“The plug is on? %s\n”, p.State())
+// the controller believes that the plug is now on
+fmt.Printf(“The plug is on? %s\n”, p.IsOn())
+
+// wait for a bit
+time.Sleep(4 * time.Second)
 
 // switch the plug off
-p.Set(false)
+p.Off()
 ~~~
 ## Development Build
 By default, gogenie builds for a raspberry pi but a *dev* tag is available for development and testing away from the target system.

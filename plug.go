@@ -15,10 +15,23 @@ var mutex = &sync.Mutex{}
 type PlugID int
 
 const (
-	PlugAll PlugID = iota
-	PlugOne
-	PlugTwo
+	all PlugID = iota
+	one
+	two
 )
+
+var (
+	PlugAll = &plug{id: all}
+	PlugOne = &plug{id: one}
+	PlugTwo = &plug{id: two}
+)
+
+func init() {
+	// initialise the plugs
+	if err := initPlugs(); err != nil {
+		log.Fatal(err)
+	}
+}
 
 // initPlugs initialises the pins used to communicate with the plugs
 func initPlugs() (err error) {
@@ -54,25 +67,13 @@ type plug struct {
 	state bool
 }
 
-// newPlug creates a new variable to control the plug with the supplied id
-func NewPlug(id PlugID) *plug {
-	p := &plug{
-		id: id,
-	}
-
-	// initialise the plugs
-	if err := initPlugs(); err != nil {
-		log.Fatal(err)
-	}
-
-	// start with plug off
-	p.Set(false)
-
-	return p
+// stringer function for a Plug
+func (p plug) String() string {
+	return fmt.Sprintf("Plug %s", p.id)
 }
 
-// set sets the plug
-func (p *plug) Set(on bool) error {
+// set sets the plug to the given value; true = on, false = off
+func (p *plug) set(on bool) error {
 	// lock pins
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -82,17 +83,17 @@ func (p *plug) Set(on bool) error {
 
 	// set d2-d1-d0 depending on which plug
 	switch p.id {
-	case PlugAll:
+	case all:
 		// 011
 		d2.off()
 		d1.on()
 		d0.on()
-	case PlugOne:
+	case one:
 		// 111
 		d2.on()
 		d1.on()
 		d0.on()
-	case PlugTwo:
+	case two:
 		// 110
 		d2.on()
 		d1.on()
@@ -126,7 +127,18 @@ func (p *plug) Set(on bool) error {
 	return err
 }
 
-// state returns the current status of the plug
-func (p *plug) State() bool {
+// On sends a switch on message to the plug
+func (p *plug) On() error {
+	return p.set(true)
+}
+
+// Off sends a switch off message to the plug
+func (p *plug) Off() error {
+	return p.set(false)
+}
+
+// IsOn returns true if the current state indicates that the plug is on
+// Note: this is the state that the controller believes the plug to be in since the communication is only one-way
+func (p *plug) IsOn() bool {
 	return p.state
 }
